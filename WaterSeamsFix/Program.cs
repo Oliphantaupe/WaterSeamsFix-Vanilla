@@ -60,18 +60,92 @@ public class Program
 
         var patchesByMod = new Dictionary<string, int>();
         int errorCount = 0;
+        var skippedMods = new List<string>();
 
         Console.WriteLine("Scanning cells...");
         Console.WriteLine();
 
-        foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(state.LinkCache))
+        // Process each mod individually to isolate errors
+        foreach (var modListing in state.LoadOrder.PriorityOrder)
+        {
+            if (modListing.Mod == null) continue;
+            
+            string modName = modListing.ModKey.FileName.String;
+            
+            // Skip ignored mods
+            if (IgnoredMods.Contains(modName)) continue;
+
+            try
+            {
+                ProcessMod(modListing.Mod, modName, state, patchesByMod);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  Warning: Skipped {modName} - {ex.Message}");
+                skippedMods.Add(modName);
+                errorCount++;
+            }
+        }
+
+        // Decompress records
+        int decompressed = DecompressRecords(state.PatchMod);
+
+        // Summary
+        int totalPatched = patchesByMod.Values.Sum();
+        
+        Console.WriteLine("-------------------------------------------");
+        Console.WriteLine("  RESULTS");
+        Console.WriteLine("-------------------------------------------");
+        Console.WriteLine();
+
+        if (patchesByMod.Count > 0)
+        {
+            Console.WriteLine("Patched cells by mod:");
+            foreach (var kvp in patchesByMod.OrderByDescending(x => x.Value))
+            {
+                Console.WriteLine($"  {kvp.Value,4} - {kvp.Key}");
+            }
+            Console.WriteLine();
+        }
+
+        Console.WriteLine($"Total cells patched: {totalPatched}");
+        
+        if (decompressed > 0)
+            Console.WriteLine($"Records decompressed: {decompressed}");
+        
+        if (skippedMods.Count > 0)
+        {
+            Console.WriteLine($"Skipped mods (corrupted): {skippedMods.Count}");
+            foreach (var mod in skippedMods)
+            {
+                Console.WriteLine($"  - {mod}");
+            }
+        }
+
+        Console.WriteLine();
+        
+        if (totalPatched > 0)
+            Console.WriteLine("Done! Place the output plugin after your water mods.");
+        else
+            Console.WriteLine("Done! No patches needed - water data is correct.");
+        
+        Console.WriteLine();
+    }
+
+    private static void ProcessMod(
+        ISkyrimModGetter mod, 
+        string modName,
+        IPatcherState<ISkyrimMod, ISkyrimModGetter> state,
+        Dictionary<string, int> patchesByMod)
+    {
+        foreach (var cellContext in mod.EnumerateMajorRecordContexts<ICell, ICellGetter>(state.LinkCache))
         {
             try
             {
-                string modName = cellContext.ModKey.FileName.String;
-                
-                if (IgnoredMods.Contains(modName))
-                    continue;
+                // Check if this mod is the winning override for this cell
+                var winningContext = state.LinkCache.ResolveContext<ICell, ICellGetter>(cellContext.Record.FormKey);
+                if (!winningContext.ModKey.Equals(mod.ModKey))
+                    continue; // This mod doesn't win the conflict
 
                 var truthSource = FindTruthSource(cellContext.Record.FormKey, state.LinkCache);
                 if (truthSource == null)
@@ -106,50 +180,11 @@ public class Program
                     patchesByMod[modName]++;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"  Error: {cellContext.Record.FormKey} - {ex.Message}");
-                errorCount++;
+                // Skip individual cell errors silently
             }
         }
-
-        // Decompress records
-        int decompressed = DecompressRecords(state.PatchMod);
-
-        // Summary
-        int totalPatched = patchesByMod.Values.Sum();
-        
-        Console.WriteLine("-------------------------------------------");
-        Console.WriteLine("  RESULTS");
-        Console.WriteLine("-------------------------------------------");
-        Console.WriteLine();
-
-        if (patchesByMod.Count > 0)
-        {
-            Console.WriteLine("Patched cells by mod:");
-            foreach (var kvp in patchesByMod.OrderByDescending(x => x.Value))
-            {
-                Console.WriteLine($"  {kvp.Value,4} - {kvp.Key}");
-            }
-            Console.WriteLine();
-        }
-
-        Console.WriteLine($"Total cells patched: {totalPatched}");
-        
-        if (decompressed > 0)
-            Console.WriteLine($"Records decompressed: {decompressed}");
-        
-        if (errorCount > 0)
-            Console.WriteLine($"Errors: {errorCount}");
-
-        Console.WriteLine();
-        
-        if (totalPatched > 0)
-            Console.WriteLine("Done! Place the output plugin after your water mods.");
-        else
-            Console.WriteLine("Done! No patches needed - water data is correct.");
-        
-        Console.WriteLine();
     }
 
     private static ICellGetter? FindTruthSource(FormKey formKey, ILinkCache<ISkyrimMod, ISkyrimModGetter> linkCache)
