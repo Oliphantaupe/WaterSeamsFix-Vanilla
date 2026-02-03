@@ -12,7 +12,7 @@ Many mods accidentally revert water fixes from `Update.esm` and USSEP. This caus
 2. Click **Git Repository**
 3. Search for "Water Seams" or paste:
    ```
-   https://github.com/YOUR_USERNAME/WaterSeamsFix
+   https://github.com/Oliphantaupe/WaterSeamsFix
    ```
 4. Add the patcher and run
 
