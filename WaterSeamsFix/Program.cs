@@ -2,6 +2,7 @@
 // Fixes water seams and incorrect water data caused by mods
 // that revert water assignments made by Update.esm or USSEP.
 
+using System.Diagnostics;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -138,8 +139,18 @@ public class Program
         IPatcherState<ISkyrimMod, ISkyrimModGetter> state,
         Dictionary<string, int> patchesByMod)
     {
+        Console.Write($"  {modName}... ");
+        
+        var modStopwatch = Stopwatch.StartNew();
+        int cellCount = 0;
+        int patchCount = 0;
+        var slowCells = new List<string>();
+
         foreach (var cellContext in mod.EnumerateMajorRecordContexts<ICell, ICellGetter>(state.LinkCache))
         {
+            cellCount++;
+            var cellTimer = Stopwatch.StartNew();
+            
             try
             {
                 // Check if this mod is the winning override for this cell
@@ -175,15 +186,46 @@ public class Program
                     else
                         patchedCell.Water.SetTo(truthWater.FormKey);
 
-                    if (!patchesByMod.ContainsKey(modName))
-                        patchesByMod[modName] = 0;
-                    patchesByMod[modName]++;
+                    patchCount++;
                 }
             }
             catch
             {
                 // Skip individual cell errors silently
             }
+            finally
+            {
+                cellTimer.Stop();
+                if (cellTimer.ElapsedMilliseconds > 1000)
+                {
+                    var cellId = cellContext.Record.EditorID ?? cellContext.Record.FormKey.ToString();
+                    slowCells.Add($"{cellId} ({cellTimer.ElapsedMilliseconds}ms)");
+                }
+            }
+        }
+
+        modStopwatch.Stop();
+        
+        // Update patch count
+        if (patchCount > 0)
+        {
+            patchesByMod[modName] = patchCount;
+        }
+
+        // Print result
+        if (modStopwatch.ElapsedMilliseconds > 5000)
+        {
+            Console.WriteLine($"{cellCount} cells, {patchCount} patched [SLOW: {modStopwatch.ElapsedMilliseconds}ms]");
+        }
+        else
+        {
+            Console.WriteLine($"{cellCount} cells, {patchCount} patched");
+        }
+
+        // Print slow cells if any
+        foreach (var slowCell in slowCells)
+        {
+            Console.WriteLine($"    Slow cell: {slowCell}");
         }
     }
 
