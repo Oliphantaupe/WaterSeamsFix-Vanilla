@@ -1,0 +1,5 @@
+{
+  "Nickname": "Water Seams Fix",
+  "OneLineDescription": "Fixes water seams caused by mods reverting Update.esm/USSEP water data",
+  "LongDescription": "Many mods accidentally revert water fixes from Update.esm and USSEP, causing visible water seams at cell boundaries. This patcher automatically detects and corrects these issues by restoring the correct water data."
+}

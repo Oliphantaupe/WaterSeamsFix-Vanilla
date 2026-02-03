@@ -1,0 +1,8 @@
+{
+  "$type": "Synthesis.Bethesda.Execution.Settings.GithubPatcherSettings, Synthesis.Bethesda.Execution",
+  "Nickname": "Water Seams Fix",
+  "On": true,
+  "ID": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
+  "GitRepoAddress": "https://github.com/YOUR_USERNAME/WaterSeamsFix",
+  "ProjectSubpath": "WaterSeamsFix/WaterSeamsFix.csproj"
+}
