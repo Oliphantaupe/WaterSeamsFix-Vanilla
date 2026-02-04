@@ -25,7 +25,7 @@ The patcher only modifies the Water (XCWT) subrecord. All other cell data (place
 2. Click **Git Repository**
 3. Search for "Water Seams" or paste:
    ```
-   https://github.com/Oliphantaupe/Water-Seams-Fix
+   https://github.com/Oliphantaupe/WaterSeamsFix-Vanilla
    ```
 4. Add the patcher and run
 

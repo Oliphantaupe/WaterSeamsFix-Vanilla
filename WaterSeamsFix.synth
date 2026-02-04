@@ -1,7 +1,7 @@
 {
   "AddGitPatcher": 
   {
-    "Url": "https://github.com/Oliphantaupe/Water-Seams-Fix",
+    "Url": "https://github.com/Oliphantaupe/WaterSeamsFix-Vanilla",
     "SelectedProject": "WaterSeamsFix\\WaterSeamsFix.csproj"
   }
 }
